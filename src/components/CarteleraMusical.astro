@@ -1,0 +1,215 @@
+---
+// CarteleraMusical.astro — grupos que tocan en la recepción
+// Para cambiar la imagen de un grupo, se cambia su "imagen" y sus medidas acá.
+const grupos = [
+  { nombre: "Rebelde", imagen: "/imagenes/grupo1.webp", ancho: 1200, alto: 680 },
+  { nombre: "Tunay Bolivia", imagen: "/imagenes/grupo2.webp", ancho: 900, alto: 1194 },
+];
+
+// 🔥 Chispas sobre la imagen. Posiciones "al azar" pero fijas (semilla),
+// así cada vez que se compila el sitio quedan iguales.
+const CANTIDAD_CHISPAS = 16;
+function crearChispas(semilla: number) {
+  let s = semilla;
+  const azar = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
+  return Array.from({ length: CANTIDAD_CHISPAS }, () => ({
+    x: (4 + azar() * 92).toFixed(1),             // posición horizontal (%)
+    t: (2 + azar() * 3.5).toFixed(1),            // tamaño (px)
+    d: (4.5 + azar() * 4).toFixed(2),            // duración de la subida (s)
+    r: (-azar() * 8).toFixed(2),                 // arranque desfasado (s)
+    deriva: ((azar() - 0.5) * 40).toFixed(0),    // cuánto se mece de costado (px)
+  }));
+}
+---
+
+<section class="py-10 px-4 relative" id="seccion-cartelera">
+  <div class="max-w-xl mx-auto text-center">
+
+    <!-- 🎶 TÍTULO -->
+    <div class="mb-8" id="titulo-cartelera">
+      <h2 class="font-great-vibes text-5xl md:text-6xl text-[#C9A961] leading-tight">
+        Cartelera Musical
+      </h2>
+      <div class="flex items-center justify-center gap-3 mt-3" aria-hidden="true">
+        <div class="w-16 h-px bg-gradient-to-r from-transparent to-[#C9A961]/70"></div>
+        <svg class="w-5 h-5 text-[#C9A961]" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/>
+        </svg>
+        <div class="w-16 h-px bg-gradient-to-l from-transparent to-[#C9A961]/70"></div>
+      </div>
+      <p class="font-charm text-xl md:text-2xl text-[#626a54] mt-3">
+        Celebremos nuestro amor con música en vivo
+      </p>
+    </div>
+
+    <!-- 🎤 GRUPOS -->
+    <div class="space-y-10">
+      {grupos.map((grupo, i) => (
+        <div class="grupo-cartelera" data-lado={i % 2 === 0 ? "-1" : "1"}>
+          <div class="relative p-2 sm:p-3 bg-white/90 rounded-[1.5rem] border-2 border-[#C9A961]/40 shadow-lg">
+            <!-- Esquinas doradas -->
+            <div class="absolute top-2 left-2 w-7 h-7 border-t-2 border-l-2 border-[#C9A961]/70 rounded-tl-2xl pointer-events-none z-10"></div>
+            <div class="absolute top-2 right-2 w-7 h-7 border-t-2 border-r-2 border-[#C9A961]/70 rounded-tr-2xl pointer-events-none z-10"></div>
+            <div class="absolute bottom-2 left-2 w-7 h-7 border-b-2 border-l-2 border-[#C9A961]/70 rounded-bl-2xl pointer-events-none z-10"></div>
+            <div class="absolute bottom-2 right-2 w-7 h-7 border-b-2 border-r-2 border-[#C9A961]/70 rounded-br-2xl pointer-events-none z-10"></div>
+
+            <div class="relative overflow-hidden rounded-2xl">
+              <img
+                src={grupo.imagen}
+                alt={`Grupo musical ${grupo.nombre}`}
+                width={grupo.ancho}
+                height={grupo.alto}
+                loading="lazy"
+                decoding="async"
+                class="w-full h-auto block"
+              />
+
+              <!-- 🔥 Chispas que suben -->
+              <div class="chispas" aria-hidden="true">
+                {crearChispas(i + 7).map((c) => (
+                  <span
+                    class="chispa"
+                    style={`--x:${c.x}%; --t:${c.t}px; --d:${c.d}s; --r:${c.r}s; --deriva:${c.deriva}px;`}
+                  ></span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <!-- Nombre del grupo -->
+          <div class="flex items-center justify-center gap-3 mt-4">
+            <div class="w-8 sm:w-12 h-px bg-[#C9A961]/60"></div>
+            <p class="font-charm text-2xl md:text-3xl text-[#C9A961] font-bold">
+              {grupo.nombre}
+            </p>
+            <div class="w-8 sm:w-12 h-px bg-[#C9A961]/60"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+  </div>
+</section>
+
+<script>
+  import { gsap } from "gsap";
+  import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  if (typeof window !== 'undefined') {
+    document.addEventListener("DOMContentLoaded", () => {
+      // 🔥 Las chispas solo se mueven mientras la imagen está en pantalla
+      const observador = new IntersectionObserver((entradas) => {
+        entradas.forEach((e) => e.target.classList.toggle("chispas-activas", e.isIntersecting));
+      });
+      document.querySelectorAll(".chispas").forEach((el) => observador.observe(el));
+
+      // Quien pide menos movimiento ve todo quieto
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+      // ⏳ FILA DE ESPERA: si varios elementos llegan a la pantalla a la vez,
+      // entran de a uno, separados por PAUSA segundos
+      const PAUSA = 0.45;
+      let proximoTurno = 0;
+      function enFila(tl: gsap.core.Timeline) {
+        const ahora = gsap.ticker.time;
+        const espera = Math.max(0, proximoTurno - ahora);
+        proximoTurno = ahora + espera + PAUSA;
+        gsap.delayedCall(espera, () => tl.play());
+      }
+
+      function alAparecer(trigger: Element | string, tl: gsap.core.Timeline) {
+        ScrollTrigger.create({
+          trigger,
+          start: "top 88%",
+          onEnter: () => enFila(tl),
+          onLeaveBack: () => tl.reverse(),
+        });
+      }
+
+      // ✨ TÍTULO: de borroso a nítido
+      const titulo = gsap.timeline({ paused: true })
+        .fromTo("#titulo-cartelera",
+          { opacity: 0, y: 24, filter: "blur(6px)" },
+          { opacity: 1, y: 0, filter: "blur(0px)", duration: 1.4, ease: "power2.out" });
+      alAparecer("#titulo-cartelera", titulo);
+
+      // 🎤 CADA GRUPO: entra alternando izquierda / derecha, luego su nombre
+      document.querySelectorAll<HTMLElement>(".grupo-cartelera").forEach((grupo) => {
+        const lado = Number(grupo.dataset.lado);
+        const nombre = grupo.querySelector("p");
+
+        const tl = gsap.timeline({ paused: true })
+          .fromTo(grupo,
+            { opacity: 0, x: 45 * lado, filter: "blur(4px)" },
+            { opacity: 1, x: 0, filter: "blur(0px)", duration: 1.2, ease: "power3.out" });
+        if (nombre) {
+          tl.fromTo(nombre,
+            { opacity: 0, y: 10 },
+            { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" }, "<0.4");
+        }
+        alAparecer(grupo, tl);
+      });
+    });
+  }
+</script>
+
+<style>
+  /* 🔥 CHISPAS: puntitos dorados que suben, titilan y se apagan */
+  .chispas {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+
+  /* Cada chispa es una "columna" del alto de la imagen que sube;
+     el punto luminoso va arriba de la columna */
+  .chispa {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--x);
+    width: var(--t);
+    opacity: 0;
+    animation: subir-chispa var(--d) linear var(--r) infinite;
+    animation-play-state: paused;
+  }
+  .chispa::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--t);
+    height: var(--t);
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff7da 0%, #ffd27a 40%, rgba(255, 150, 50, 0.5) 70%, transparent 100%);
+    box-shadow: 0 0 6px 2px rgba(255, 180, 70, 0.55), 0 0 12px 3px rgba(255, 130, 30, 0.25);
+    animation: titilar-chispa 0.9s ease-in-out infinite alternate;
+    animation-play-state: paused;
+  }
+
+  .chispas-activas .chispa,
+  .chispas-activas .chispa::after {
+    animation-play-state: running;
+  }
+
+  /* Nace abajo, sube meciéndose y se apaga antes de llegar a las caras */
+  @keyframes subir-chispa {
+    0%   { transform: translate(0, 100%);                          opacity: 0; }
+    12%  {                                                         opacity: 0.95; }
+    50%  { transform: translate(var(--deriva), 65%);               opacity: 0.8; }
+    80%  {                                                         opacity: 0.35; }
+    100% { transform: translate(calc(var(--deriva) * -0.5), 35%);  opacity: 0; }
+  }
+
+  @keyframes titilar-chispa {
+    from { transform: scale(0.75); filter: brightness(0.9); }
+    to   { transform: scale(1.15); filter: brightness(1.25); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chispas { display: none; }
+  }
+</style>

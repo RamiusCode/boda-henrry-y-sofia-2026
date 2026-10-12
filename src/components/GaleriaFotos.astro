@@ -1,0 +1,115 @@
+---
+// GaleriaFotos.astro — una sola foto de los novios, enmarcada
+---
+
+<section class="relative w-full py-10 px-6" id="seccion-galeria">
+    <div class="max-w-md mx-auto text-center">
+
+        <!-- ✨ TÍTULO -->
+        <div class="mb-8" id="galeria-titulo">
+            <div class="flex items-center justify-center gap-3 mb-3" aria-hidden="true">
+                <div class="h-px w-16 bg-gradient-to-r from-transparent to-[#C9A961]/70"></div>
+                <span class="text-[#C9A961] text-base">✦</span>
+                <div class="h-px w-16 bg-gradient-to-l from-transparent to-[#C9A961]/70"></div>
+            </div>
+            <h2 class="font-great-vibes text-5xl md:text-6xl text-[#C9A961] leading-tight">
+                Hoy y Siempre
+            </h2>
+            <p class="font-charm text-xl md:text-2xl text-[#626a54] mt-2">
+                El comienzo de nuestro para siempre
+            </p>
+        </div>
+
+        <!-- 🖼️ FOTO ENMARCADA -->
+        <div class="relative mx-auto max-w-sm" id="galeria-foto">
+            <!-- Marco exterior fino, separado de la foto -->
+            <div class="absolute -inset-3 rounded-[2rem] border border-[#C9A961]/35 pointer-events-none" aria-hidden="true"></div>
+
+            <div class="relative p-2.5 bg-white/95 rounded-[1.6rem] border-2 border-[#C9A961]/45 shadow-xl">
+                <!-- Esquinas doradas -->
+                <div class="absolute top-2 left-2 w-8 h-8 border-t-2 border-l-2 border-[#C9A961]/70 rounded-tl-2xl pointer-events-none z-10" aria-hidden="true"></div>
+                <div class="absolute top-2 right-2 w-8 h-8 border-t-2 border-r-2 border-[#C9A961]/70 rounded-tr-2xl pointer-events-none z-10" aria-hidden="true"></div>
+                <div class="absolute bottom-2 left-2 w-8 h-8 border-b-2 border-l-2 border-[#C9A961]/70 rounded-bl-2xl pointer-events-none z-10" aria-hidden="true"></div>
+                <div class="absolute bottom-2 right-2 w-8 h-8 border-b-2 border-r-2 border-[#C9A961]/70 rounded-br-2xl pointer-events-none z-10" aria-hidden="true"></div>
+
+                <div class="relative overflow-hidden rounded-[1.2rem]">
+                    <img
+                        src="/imagenes/foto1.webp"
+                        alt="Henrry y Sofía"
+                        width="900"
+                        height="1351"
+                        loading="lazy"
+                        decoding="async"
+                        class="foto-respira w-full h-auto block"
+                    />
+                    <!-- Velo cálido muy suave abajo -->
+                    <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
+                        style="background: linear-gradient(to top, rgba(201,169,97,0.18), transparent 35%);"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 💑 NOMBRES -->
+        <div class="mt-8" id="galeria-nombres">
+            <p class="font-great-vibes text-4xl md:text-5xl text-[#C9A961]">
+                Henrry &amp; Sofía
+            </p>
+            <div class="flex items-center justify-center gap-3 mt-3" aria-hidden="true">
+                <div class="h-px w-12 bg-gradient-to-r from-transparent to-[#C9A961]/70"></div>
+                <div class="w-1.5 h-1.5 rotate-45 bg-[#C9A961]/80"></div>
+                <div class="h-px w-12 bg-gradient-to-l from-transparent to-[#C9A961]/70"></div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<script>
+    import { gsap } from "gsap";
+    import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    if (typeof window !== "undefined") {
+        document.addEventListener("DOMContentLoaded", () => {
+            // Quien pide menos movimiento ve todo quieto
+            if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+            const tl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: "#seccion-galeria",
+                    start: "top 80%",
+                    toggleActions: "play none none reverse",
+                },
+            });
+
+            // Título: de borroso a nítido
+            tl.fromTo("#galeria-titulo",
+                { opacity: 0, y: 24, filter: "blur(6px)" },
+                { opacity: 1, y: 0, filter: "blur(0px)", duration: 1.4, ease: "power2.out" })
+            // Foto: aparece despacio, como revelándose
+            .fromTo("#galeria-foto",
+                { opacity: 0, scale: 0.94, filter: "blur(8px)" },
+                { opacity: 1, scale: 1, filter: "blur(0px)", duration: 1.8, ease: "power3.out" }, "-=0.7")
+            // Nombres al final
+            .fromTo("#galeria-nombres",
+                { opacity: 0, y: 14 },
+                { opacity: 1, y: 0, duration: 1.1, ease: "power2.out" }, "-=0.9");
+        });
+    }
+</script>
+
+<style>
+    /* La foto "respira": un acercamiento lentísimo que va y vuelve */
+    .foto-respira {
+        transform-origin: center 35%;
+        animation: respirar-foto 14s ease-in-out infinite alternate;
+    }
+    @keyframes respirar-foto {
+        from { transform: scale(1); }
+        to   { transform: scale(1.05); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .foto-respira { animation: none; }
+    }
+</style>
